@@ -44,7 +44,7 @@ workflow {
   }
 
   if (params.databases != 'NO_FILE') {
-    ch_db = Channel.fromPath(params.databases).splitCsv(header: true).map{ it -> [it['ID'], it['DBNAME'], it['DBVERSION'], it['PATH']] }
+    ch_db = Channel.fromPath(params.databases).splitCsv(header: true).map{ it -> [it['ID'], it['DBNAME'], it['PATH']] }
   } else {
     ch_db = Channel.of()
   }

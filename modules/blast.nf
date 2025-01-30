@@ -37,7 +37,7 @@ process blastn {
     publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_${db_id}*"
 
     input:
-    tuple val(seq), val(db_id), val(db_name), val(db_version), path(db_dir)
+    tuple val(seq), val(db_id), val(db_name), path(db_dir)
 
     output:
     tuple val(sample_id), val(db_id), path("${sample_id}_${db_id}_blast.csv"),       emit: blast_report, optional:true
@@ -92,7 +92,7 @@ process blastn {
         tool_version: \$(python3 --version | cut -d' ' -f2)
       databases:
       - database_name: ${db_name}
-        database_version: ${db_version}
+        database_version: \$(grep "version" ${db_dir}/metadata.json  | cut -d" " -f4 | sed 's/"//g;s/,//g')
         files: 
     \$(sha256sum \$(readlink -f ${db_dir})/${db_name}* | awk '{ printf("    - filename: \\"%s\\"\\n      sha256: \\"%s\\"\\n", \$2, \$1) }')
     EOL_VERSIONS
