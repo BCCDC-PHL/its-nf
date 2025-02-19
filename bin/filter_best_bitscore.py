@@ -4,56 +4,26 @@ import argparse
 import csv
 import json
 import sys
+import pandas as pd 
 
 
-def parse_blast_report(blast_report_path):
-    with open(blast_report_path, 'r') as f:
-        header_line = f.readline().strip()
-        header_fieldnames = header_line.split(',')
-
-    int_fields = [
-        'bitscore',
-    ]
-    parsed_blast_report = []
-    with open(blast_report_path, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            for field in int_fields:
-                row[field] = int(row[field])
-            parsed_blast_report.append(row)
-
-    return header_fieldnames, parsed_blast_report
-
-
-def determine_best_bitscore(parsed_blast_report):
-    best_bitscore = 0
-    for blast_record in parsed_blast_report:
-        if blast_record['bitscore'] > best_bitscore:
-            best_bitscore = blast_record['bitscore']
-
-    return best_bitscore
-        
+def filter_best_bitscore(df, group_col, score_col):
+    idxmax = df.groupby(group_col)[score_col].idxmax()
+    df = df.loc[idxmax].reset_index(drop=True)
+    return df
 
 def main(args):
-    output_fieldnames, blast_report = parse_blast_report(args.input)
-    best_bitscore = determine_best_bitscore(blast_report)
-
-    filtered_blast_report = list(filter(lambda x: x['bitscore'] == best_bitscore, blast_report))
-    seen_species = set()
-    filtered_one_match_per_species_blast_report = []
-    for blast_record in filtered_blast_report:
-        if blast_record['species'] not in seen_species:
-            seen_species.add(blast_record['species'])
-            filtered_one_match_per_species_blast_report.append(blast_record)
-
-    writer = csv.DictWriter(sys.stdout, fieldnames=output_fieldnames, dialect='unix', quoting=csv.QUOTE_MINIMAL)
-    writer.writeheader()
-    for row in filtered_one_match_per_species_blast_report:
-        writer.writerow(row)
+    blast_df = pd.read_csv(args.input)
+    filtered_df = filter_best_bitscore(blast_df, args.group_col, args.score_col)
+    filtered_df.to_csv(args.output, index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input')
+    parser.add_argument('-i', '--input', required=True)
+    parser.add_argument('-o', '--output', required=True)
+    parser.add_argument('-g', '--group_col', default='query_seq_id')
+    parser.add_argument('-s', '--score_col', default='bitscore')
+    
     args = parser.parse_args()
     main(args)
