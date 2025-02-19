@@ -46,10 +46,10 @@ def extract_descriptions(database_df):
 	def extract_info(string):
 		string = " ".join(string.split()[3:])
 
-		if "strain" in string:
-			string = string.split("strain")[1]
+		if re.search("strain|isolate", string):
+			string = re.split("strain|isolate", string, maxsplit=1)[1]
 		
-		return re.split("(?:16S|,)", string)[0]
+		return re.split("(?:ITS|,)", string)[0]
 
 	extra_info = [(x.split()[0], extract_info(x)) for x in headers ]
 
