@@ -150,14 +150,11 @@ process filter_best_bitscore {
 
     script:
     """
-    filter_best_bitscore.py -i ${full_blast_report} > ${sample_id}_${db_id}_blast_best_bitscore.csv
-
-    # cat <<-EOL_VERSIONS > ${sample_id}_${db_id}_filter_bitscore_provenance.yml
-    # - process_name: "${task.process}"
-    #   tools:
-    #   - tool_name: python
-    #     tool_version: \$(python3 --version | cut -d' ' -f2)
-    # EOL_VERSIONS
+    filter_best_bitscore.py \
+    --input ${full_blast_report} \
+    --output ${sample_id}_${db_id}_blast_best_bitscore.csv \
+    --group_col query_seq_id \
+    --score_col bitscore
     """
 }
 
