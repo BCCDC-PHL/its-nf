@@ -1,4 +1,4 @@
-# its-nf
+# ITS BLAST Pipeline (its-nf)
 
 Prepare a report for taxonomic assignment based on [ITS](https://en.wikipedia.org/wiki/Internal_transcribed_spacer) sequences, using [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi).
 
