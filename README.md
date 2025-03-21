@@ -2,6 +2,23 @@
 
 Prepare a report for taxonomic assignment based on [ITS](https://en.wikipedia.org/wiki/Internal_transcribed_spacer) sequences, using [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi).
 
+## Workflow 
+
+```mermaid
+graph TD
+A[Input FASTA Sequences] --> B[Sequence Quality Control]
+B --> C[BLAST Search]
+C --> DA(NCBI RefSeq Database)
+C --> DB(UNITE Database)
+C --> DC(Custom BCCDC Database)
+DA --> E[Taxonomy Lookup]
+DB --> E
+DC --> E
+E --> F[Collect & Filter Results]
+F --> G[Build HTML Report]
+
+```
+
 ## Usage
 
 The pipeline requires a list of BLAST databases to run against. It should follow the following format:
