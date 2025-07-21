@@ -77,12 +77,15 @@ def build_dbnote(databases_df):
 
 	return f"<p>{DBNOTE}</p>"
 
+def build_table_title(name):
+	return f"""		
+			<h3 class = "first">{name}</h3>
+			"""
 
 def build_table(name, col_names, table_rows, hidden_rows=None):
 	hidden_rows = '' if not hidden_rows else hidden_rows
 	table_header = '</th>\n<th>'.join(col_names)
 	return f'''
-			<h3 class = "first">{name}</h3>
 			<table>
 				<tbody>
 					<tr class="header">

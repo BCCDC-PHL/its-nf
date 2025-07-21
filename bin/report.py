@@ -4,12 +4,11 @@ import pandas as pd
 import argparse
 from functools import partial
 import re
-from custom_html import HEAD, build_dbnote, build_table, build_row, FOOT, PAGEBREAK
+from custom_html import HEAD, build_dbnote, build_table,build_table_title, build_row, FOOT, PAGEBREAK
 
 
 EXPR_PRIORITY = re.compile(r'ATCC|LMG|type|NCTC')
-row_names = "subject_accession species bitscore percent_coverage percent_identity database_name extra_info".split()
-build_row_part = partial(build_row, row_names=row_names)
+ROW_NAMES = "subject_accession species bitscore percent_coverage percent_identity database_name extra_info".split()
 
 
 def parse_db_csv(filepath):
@@ -77,50 +76,64 @@ def parse_blast(filepath):
 
 	return df.fillna('N/A')
 
-def main(args):
-	blast_table = parse_blast(args.blast)
+def build_table_string(name, df, limit=20):
+	build_row_partial = partial(build_row, row_names=ROW_NAMES)
 
-	outfile = open(args.output, "w")
-	outfile.write(HEAD)
+	if df.shape[0] < limit:
+		str_rows = df.apply(build_row_partial, axis=1)
+		str_rows = '\n'.join(str_rows)
+		str_table = build_table(name, ROW_NAMES, str_rows)
+
+	else:
+		N = df.shape[0]
+		str_rows = df.iloc[0:limit].apply(build_row_partial, axis=1)
+		str_rows = '\n'.join(str_rows)
+		
+		hidden_str_rows = df.iloc[limit+1:min(N, 300)].apply(build_row_partial, axis=1)
+		hidden_str_rows = '\n'.join(hidden_str_rows)
+
+		str_table = build_table(name, ROW_NAMES, str_rows, hidden_str_rows)
+	
+	return str_table
+
+def main(args):
+	local_blast_table = parse_blast(args.blast)
+	ncbi_blast_table = parse_blast(args.ncbi)
+	ncbi_blast_table['extra_info'] = ''
 
 	database_df = parse_db_csv(args.db)
 	DBNOTE = build_dbnote(database_df)
 
 	extra_info = extract_descriptions(database_df)
 
-	blast_table = blast_table.merge(extra_info, on='subject_accession', how='left')
-	
+	local_blast_table = local_blast_table.merge(extra_info, on='subject_accession', how='left')
 
-	for name, df in blast_table.groupby('query_seq_id'):
-		
-		print(name)
+	local_blast_dict = dict(list(local_blast_table.groupby('query_seq_id')))
+	ncbi_blast_dict = dict(list(ncbi_blast_table.groupby('query_seq_id')))
 
-		outfile.write(DBNOTE)
-
-		if df.shape[0] < 20:
-			str_rows = df.apply(build_row_part, axis=1)
-			str_rows = '\n'.join(str_rows)
-			str_table = build_table(name, row_names, str_rows)
-			outfile.write(str_table)
-		else:
-			N = df.shape[0]
-			str_rows = df.iloc[0:20].apply(build_row_part, axis=1)
-			str_rows = '\n'.join(str_rows)
+	with open(args.output, "w") as outfile:
+		outfile.write(HEAD)
+		for name in set(local_blast_dict.keys()).union(ncbi_blast_dict.keys()):
 			
-			hidden_str_rows = df.iloc[21:min(N, 300)].apply(build_row_part, axis=1)
-			hidden_str_rows = '\n'.join(hidden_str_rows)
+			print(name)
+			outfile.write(DBNOTE)
 
-			str_table = build_table(name, row_names, str_rows, hidden_str_rows)
-			outfile.write(str_table)
+			outfile.write(build_table_title(name))
 
-		outfile.write(PAGEBREAK)
+			if name in local_blast_dict:
+				outfile.write(build_table_string(name, local_blast_dict[name]))
 
-	outfile.write(FOOT)
-	outfile.close()
+			if name in ncbi_blast_dict:
+				outfile.write(build_table_string(name, ncbi_blast_dict[name]))
+			
+			outfile.write(PAGEBREAK)
+
+		outfile.write(FOOT)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-b', '--blast', help='A single concatenated BLAST CSV table with hits from multiple samples and multiple database sources.')
+	parser.add_argument('-b', '--blast', required=True, help='A single concatenated BLAST CSV table with hits from multiple samples and multiple database sources.')
+	parser.add_argument('-n', '--ncbi', required=True, help='A single concatenated BLAST CSV table with hits from multiple samples from NCBI core_nt database.')
 	parser.add_argument('-d', '--db', help='Database CSV file containing ID, DBNAME, and PATH columns.')
 	parser.add_argument('-o', '--output', help='Output HTML report filename.')
 	args = parser.parse_args()
